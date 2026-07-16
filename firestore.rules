@@ -1,0 +1,108 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Allow users to read and update their own user documents
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.auth.uid == userId;
+      allow update: if request.auth != null && request.auth.uid == userId;
+      allow delete: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
+    }
+
+    // Allow workers to read and update their own worker documents
+    match /workers/{workerId} {
+      allow read: if true;
+      allow create: if request.auth != null && request.auth.uid == workerId;
+      allow update: if request.auth != null && request.auth.uid == workerId;
+      // Only admins can delete workers
+      allow delete: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
+    }
+
+    // Categories
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
+    }
+
+    // Services
+    match /services/{serviceId} {
+      allow read: if true;
+      allow write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
+    }
+
+    // Areas
+    match /areas/{areaId} {
+      allow read: if true;
+      allow write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
+    }
+
+    // Bookings
+    match /bookings/{bookingId} {
+      allow read: if request.auth != null && (request.auth.uid == resource.data.customerId || request.auth.uid == resource.data.workerId || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin" || request.auth.uid == resource.data.customerUID || request.auth.uid == resource.data.workerUID);
+      allow create: if request.auth != null;
+      allow update: if request.auth != null && (request.auth.uid == resource.data.customerId || request.auth.uid == resource.data.workerId || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin" || request.auth.uid == resource.data.customerUID || request.auth.uid == resource.data.workerUID);
+      allow delete: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
+    }
+
+    // Reviews
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null && (request.auth.uid == resource.data.customerId || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin");
+    }
+
+    // Favorites
+    match /favorites/{favoriteId} {
+      allow read: if request.auth != null && request.auth.uid == resource.data.customerId;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.customerId;
+      allow delete: if request.auth != null && request.auth.uid == resource.data.customerId;
+    }
+
+    // Notifications
+    match /notifications/{notificationId} {
+      allow read, update, delete: if request.auth != null && request.auth.uid == resource.data.receiverUID;
+      allow create: if request.auth != null;
+    }
+    
+    // Ads and Banners
+    match /ads/{adId} {
+      allow read: if true;
+      allow write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
+    }
+    match /banners/{bannerId} {
+      allow read: if true;
+      allow write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
+    }
+    
+    // Settings
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
+    }
+    
+    // Admin, Reports, Payments, SupportTickets, WorkerApplications
+    match /admin/{document=**} {
+      allow read, write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
+    }
+    match /reports/{document=**} {
+      allow read, write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
+      allow create: if request.auth != null;
+    }
+    match /payments/{document=**} {
+      allow read: if request.auth != null && (request.auth.uid == resource.data.customerId || request.auth.uid == resource.data.workerId || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin");
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
+    }
+    match /supportTickets/{document=**} {
+      allow read: if request.auth != null && (request.auth.uid == resource.data.userId || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin");
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
+    }
+    match /workerApplications/{document=**} {
+      allow read, write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
+      allow create: if request.auth != null;
+    }
+  }
+}
